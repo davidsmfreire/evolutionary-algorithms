@@ -86,7 +86,7 @@ build:  ## Builds the python packages(s)
 # ALL ---------------------------------------------------------------------------------------------
 all: clean dev-setup format static-analysis security test build future  ## Runs all development flow steps
 
-distribute:
+distribute: build
 	$(RUN_COMMAND) twine upload dist/*
 
 wingo:
