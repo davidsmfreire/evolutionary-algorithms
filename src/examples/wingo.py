@@ -1,5 +1,4 @@
 from evola.epso import EPSO
-from evola.scene import Scene
 
 
 def main():
@@ -9,30 +8,21 @@ def main():
         x = chromossome[0]
         return (x**6) - 52 / 25 * (x**5) + 39 / 80 * (x**4) + 71 / 10 * (x**3) - 79 / 20 * (x**2) - x + 1 / 10
 
-    scene = Scene(
-        chromossome_length=1,
-        cost_function=cost,
-        cost_function_args=(),
-        desc="Test",
-        chromossome_low=-2,
-        chromossome_high=10,
-    )
-
     sim = EPSO(
         generations=100,
         size=10,
-        WI=0.5,
-        WM=0.5,
-        WC=0.5,
-        communication_probability=1,
-        scene=scene,
-        hold=False,
+        chromossome_length=1,
+        chromossome_low=1,
+        chromossome_high=2,
+        cost_function=cost,
+        cost_function_args=(),
+        description="Test",
     )
 
     sim.run_gui()
 
     print("Solution:")
-    print(sim.best_particle.chromossome[0])
+    print(sim.best_solution[0])
 
 
 if __name__ == "__main__":

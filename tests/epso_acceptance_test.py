@@ -1,7 +1,6 @@
 from math import isclose
 
 from evola.epso import EPSO
-from evola.scene import Scene
 
 
 def test_run_cli_simple():
@@ -12,24 +11,14 @@ def test_run_cli_simple():
         x = chromossome[0]
         return (x**6) - 52 / 25 * (x**5) + 39 / 80 * (x**4) + 71 / 10 * (x**3) - 79 / 20 * (x**2) - x + 1 / 10
 
-    scene = Scene(
-        chromossome_length=1,
-        cost_function=cost,
-        cost_function_args=(),
-        desc="Test",
-        chromossome_low=-2,
-        chromossome_high=10,
-    )
-
     sim = EPSO(
         generations=10,
         size=100,
-        WI=0.5,
-        WM=0.5,
-        WC=0.5,
-        communication_probability=1,
-        scene=scene,
-        hold=False,
+        chromossome_length=1,
+        chromossome_low=-2,
+        chromossome_high=10,
+        cost_function=cost,
+        cost_function_args=(),
     )
 
     sim.run_cli(verbose=False)

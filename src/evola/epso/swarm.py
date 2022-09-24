@@ -1,59 +1,65 @@
-import csv
-import sys
 from copy import deepcopy
-from itertools import islice
 from operator import attrgetter
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
 from evola.epso.particle import EvolutiveParticle
-from evola.scene import Scene
+from evola.population import Population
 
 
-class EvolutiveSwarm:
+class EvolutiveSwarm(Population):
     def __init__(
         self,
         swarm_size: int,
-        WI: float,
-        WM: float,
-        WC: float,
+        chromossome_length: int,
+        chromossome_low: float,
+        chromossome_high: float,
+        cost_function: Callable,
+        cost_function_args: tuple,
+        wi: float,
+        wm: float,
+        wc: float,
         communication_p: float,
-        scene: Scene,
     ):
         self.size = swarm_size
-        self.gen = 0  # generation counter (for WI)
-        self.scene = scene
+        self.gen = 0  # generation counter (for wi)
         self._communication_p = communication_p  # communication probability
+        self._chromossome_length = chromossome_length
+        self._chromossome_low = chromossome_low
+        self._chromossome_high = chromossome_high
+        self._cost_function = cost_function
+        self._cost_function_args = cost_function_args
+
         ancestors: List[EvolutiveParticle] = []
         particles: List[EvolutiveParticle] = []
 
         # Generate particles and ancestors randomly
         for _ in range(swarm_size):
-            chromossome1 = np.zeros(self.scene.chromossome_length)
-            chromossome2 = np.zeros(self.scene.chromossome_length)
-            for i in range(self.scene.chromossome_length):
-                chromossome1[i] = np.random.uniform(low=self.scene.chromossome_low, high=self.scene.chromossome_high)
-                chromossome2[i] = np.random.uniform(low=self.scene.chromossome_low, high=self.scene.chromossome_high)
+            chromossome1 = np.zeros(chromossome_length)
+            chromossome2 = np.zeros(chromossome_length)
+            for i in range(chromossome_length):
+                chromossome1[i] = np.random.uniform(low=chromossome_low, high=chromossome_high)
+                chromossome2[i] = np.random.uniform(low=chromossome_low, high=chromossome_high)
 
             ancestors.append(
                 EvolutiveParticle(
                     chromossome1,
-                    scene.cost_function,
-                    scene.cost_function_args,
-                    WI,
-                    WM,
-                    WC,
+                    cost_function,
+                    cost_function_args,
+                    wi,
+                    wm,
+                    wc,
                 )
             )
             particles.append(
                 EvolutiveParticle(
                     chromossome2,
-                    scene.cost_function,
-                    scene.cost_function_args,
-                    WI,
-                    WM,
-                    WC,
+                    cost_function,
+                    cost_function_args,
+                    wi,
+                    wm,
+                    wc,
                 )
             )
 
@@ -65,6 +71,10 @@ class EvolutiveSwarm:
         self.global_best = deepcopy(sorted)  # best particle
 
         return
+
+    @property
+    def elements(self):
+        return self.particles
 
     def reproduce(self):
 
@@ -102,6 +112,11 @@ class EvolutiveSwarm:
 
         return
 
+    def _constrain(self, chromossome: np.ndarray):
+        chromossome[chromossome > self._chromossome_high] = self._chromossome_high
+        chromossome[chromossome < self._chromossome_low] = self._chromossome_low
+        return chromossome
+
     def move(self):
 
         self.gen = self.gen + 1  # Increment nº of generations
@@ -128,29 +143,28 @@ class EvolutiveSwarm:
                 deviation = (
                     1
                     / self.gen
-                    * self.particles[i].WI
+                    * self.particles[i].wi
                     * (self.particles[i].chromossome[j] - self.ancestors[i].chromossome[j])
                 )
-                deviation = deviation + np.random.normal() * self.particles[i].WM * (
+                deviation = deviation + np.random.normal() * self.particles[i].wm * (
                     self.best_ancestors[i].chromossome[j] - self.particles[i].chromossome[j]
                 )
-                deviation = deviation + communication_matrix[j] * np.random.normal() * self.particles[i].WC * (
+                deviation = deviation + communication_matrix[j] * np.random.normal() * self.particles[i].wc * (
                     self.global_best.chromossome[j] - self.particles[i].chromossome[j]
                 )
                 chromossome[j] = self.particles[i].chromossome[j] + deviation
 
             # Apply chromossome value ceiling and floor
-            chromossome[chromossome > self.scene.chromossome_high] = self.scene.chromossome_high
-            chromossome[chromossome < self.scene.chromossome_low] = self.scene.chromossome_low
+            chromossome = self._constrain(chromossome)
 
             new_particles.append(
                 EvolutiveParticle(
                     chromossome,
-                    self.scene.cost_function,
-                    self.scene.cost_function_args,
-                    self.particles[i].WI,
-                    self.particles[i].WM,
-                    self.particles[i].WC,
+                    self._cost_function,
+                    self._cost_function_args,
+                    self.particles[i].wi,
+                    self.particles[i].wm,
+                    self.particles[i].wc,
                 )
             )
 
@@ -176,46 +190,4 @@ class EvolutiveSwarm:
         newbest = min(self.particles, key=attrgetter("cost"))
         if newbest.cost < self.global_best.cost:
             self.global_best = newbest
-        return
-
-    def average_cost(self):
-        sum = 0.0
-        p: EvolutiveParticle
-        for p in self.particles:
-            sum = sum + p.cost
-
-        return sum / self.size
-
-    def display(self, top):
-        particles = sorted(self.particles, key=attrgetter("cost"))
-        print("\n")
-        for i in range(top):
-            print("Particle %d :" % i)
-            print("Cost: %.3f" % particles[i].cost)
-            print("Chromossome values")
-            print(particles[i].chromossome)
-            print("\n")
-
-        return
-
-    def export(self, top, filename):
-        particles = sorted(self.particles, key=attrgetter("cost"))
-        with open(sys.path[0] + "/" + filename, "w", newline="") as csvfile:
-            writer = csv.writer(csvfile, delimiter=" ")
-
-            header = ["Solutions"]
-            header.extend(str(list(range(1, top + 1))))
-
-            writer.writerow(header)
-            writer.writerow(["Chromossome value"])
-            for i in range(self.scene.chromossome_length):
-                chromossomes = []
-                for particle in islice(particles, 0, top):
-                    chromossomes.append(particle.chromossome[i])
-                writer.writerow(["T%d" % (i + 1)] + chromossomes)
-            costs = ["Cost"]
-            for particle in islice(particles, 0, top):
-                costs.append(str(particle.cost))
-            writer.writerow(costs)
-
         return

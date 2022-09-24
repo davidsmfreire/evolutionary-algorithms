@@ -4,23 +4,26 @@ from typing import List
 
 from matplotlib import pyplot as plt
 
+from evola.population import Population
+
 
 class Simulation:
-    def __init__(self, gen, pop, hold: bool, desc, export_top=0) -> None:
-        self.generations = gen
-        self.pop = pop
-        self.hold = hold
-        self.desc = desc + " (%d ind, %d gen)\n" % (self.pop.size, self.generations)
-        self.export_top = export_top
+    def __init__(self, generations: int, pop: Population, description="", export_top=0) -> None:
+        self.generations: int = generations
+        self.population: Population = pop
+        self.description: str = description + " (%d ind, %d gen)\n" % (
+            self.population.size,
+            self.generations,
+        )
+        self.export_top: int = export_top
         self.cost_history: List[float] = []
         self.best_hist: List[float] = []
         self.avg_hist: List[float] = []
-        self.best_cost = 0.0
-
+        self.best_cost: float = 0.0
         return
 
-    def init_graph(self):
-        # Inicialização do gráfico em tempo real
+    def _init_graph(self):
+        # Real time plot setup
         plt.ion()
         fig, ax1 = plt.subplots()
         plt.ylabel("Cost")
@@ -30,7 +33,7 @@ class Simulation:
         self._ax = ax1
         self._line = line1
 
-    def update_graph(self, history):
+    def _update_graph(self, history):
         new_data = history[-1]
         # Update y scale dynamically
         if len(history) == 1:
@@ -57,32 +60,35 @@ class Simulation:
         self._fig.canvas.flush_events()
         return
 
-    def finish_graph(self):
+    def _finish_graph(self, hold):
         self._fig.canvas.draw()
         plt.ioff()
-        if self.hold:
+        if hold:
             plt.show()
         else:
             plt.close(self._fig)
 
     def export(self, top):
-        name = self.desc + " (%d ind, %d gen)" % (self.pop.size, self.generations) + ".csv"
-        self.pop.export(top=top, filename=name)
+        name = self.description + " (%d ind, %d gen)" % (self.population.size, self.generations) + ".csv"
+        self.population.export(top=top, filename=name)
         return
 
-    def final_message(self, start, end):
-        head = self.desc
-        time = "\t-> Simulation time: %.3fs total | %.1f gen/s\n" % (end - start, self.generations / (end - start))
+    def _final_message(self, start, end):
+        head = self.description
+        time = "\t-> Simulation time: %.3fs total | %.1f gen/s\n" % (
+            end - start,
+            self.generations / (end - start),
+        )
         bestcost = "\t-> Least cost solution: %.6f\n" % self.best_cost
         return head + time + bestcost
 
     def print(self, top):
-        self.pop.display(top)
+        self.population.display(top)
         return
 
     def export_histogram(self):
         if len(self.best_hist) > 0:
-            filename = self.desc
+            filename = self.description
 
             with open(sys.path[0] + "/" + filename + ".csv", "w", newline="") as csvfile:
                 writer = csv.writer(csvfile, delimiter=" ")

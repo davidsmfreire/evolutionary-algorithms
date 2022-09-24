@@ -89,8 +89,12 @@ all: clean dev-setup format static-analysis security test build future  ## Runs 
 distribute: build
 	$(RUN_COMMAND) twine upload dist/*
 
+
+# Examples ----------------------------------------------------------------------------------------
 wingo:
-	cd src && $(RUN_COMMAND) python -m example.wingo
+	cd src && $(RUN_COMMAND) python -m examples.wingo
 
 moore:
-	cd src && $(RUN_COMMAND) python -m example.moore
+	cd src && $(RUN_COMMAND) python -m examples.moore
+
+examples: wingo moore

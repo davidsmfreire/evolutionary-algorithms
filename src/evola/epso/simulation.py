@@ -1,11 +1,11 @@
 import time
 from copy import deepcopy
 from multiprocessing import Queue
+from typing import Callable
 
 from tqdm.auto import tqdm
 
 from evola.epso.swarm import EvolutiveSwarm
-from evola.scene import Scene
 from evola.simulation import Simulation
 
 
@@ -14,66 +14,86 @@ class EPSO(Simulation):
         self,
         generations,
         size: int,
-        WI: float,
-        WM: float,
-        WC: float,
-        communication_probability: float,
-        scene: Scene,
-        hold: bool,
+        chromossome_length: int,
+        chromossome_low: float,
+        chromossome_high: float,
+        cost_function: Callable,
+        cost_function_args: tuple,
+        wi: float = 0.5,
+        wm: float = 0.5,
+        wc: float = 0.5,
+        communication_probability: float = 1.0,
         export_top=0,
+        description="",
     ) -> None:
-        desc = scene.desc + " EPSO (p=%.2f)" % communication_probability
-        super().__init__(
-            generations, EvolutiveSwarm(size, WI, WM, WC, communication_probability, scene), hold, desc, export_top
+        desc = description + " EPSO (p=%.2f)" % communication_probability
+
+        pop = EvolutiveSwarm(
+            size,
+            chromossome_length,
+            chromossome_low,
+            chromossome_high,
+            cost_function,
+            cost_function_args,
+            wi,
+            wm,
+            wc,
+            communication_probability,
         )
 
-        self.pop: EvolutiveSwarm
+        super().__init__(generations, pop, desc, export_top)
+
+        self.population: EvolutiveSwarm
         return
 
     @property
     def best_particle(self):
-        return self.pop.global_best
+        return self.population.global_best
 
-    def run_gui(self):
-        self.init_graph()
+    @property
+    def best_solution(self):
+        return self.population.global_best.chromossome
+
+    def run_gui(self, hold=False):
+        self._init_graph()
         history = []
         start_time = time.time()
 
         for _ in tqdm(range(self.generations)):
             # EPSO steps
-            self.pop.reproduce()
-            self.pop.move()
-            self.pop.select()
+            self.population.reproduce()
+            self.population.move()
+            self.population.select()
 
             # Obter o custo melhor da população
-            new_data = self.pop.global_best.cost
+            new_data = self.population.global_best.cost
             history.append(new_data)
             self.cost_history.append(new_data)
             # Atualizar gráfico
-            self.update_graph(history)
+            self._update_graph(history)
 
-        self.pop.last_gen_update()
+        self.population.last_gen_update()
 
         end_time = time.time()
 
-        self.best_cost = self.pop.global_best.cost
+        self.best_cost = self.population.global_best.cost
 
-        print(self.final_message(start_time, end_time))
+        print(self._final_message(start_time, end_time))
 
         if self.export_top > 0:
             self.export(self.export_top, self.generations)
 
-        self.finish_graph()
+        self._finish_graph(hold)
 
         return
 
     def _run_once(self, thread_num):
         pbar = tqdm(range(self.generations), position=thread_num + 1, leave=False)
-        pop = deepcopy(self.pop)
+        pop = deepcopy(self.population)
         for _ in pbar:
             # EPSO
             self.cost_history.append(deepcopy(pop.global_best.cost))
-            pbar.set_description(f"({self.pop.size},{self.generations}) C = {pop.global_best.cost:.0f} euros")
+            pbar.set_description(f"({self.population.size},{self.generations}) C = {pop.global_best.cost:.0f} euros")
             pop.reproduce()
             pop.move()
             pop.select()
@@ -83,7 +103,7 @@ class EPSO(Simulation):
     def _run_multiple(self, itera, thread_num):
         pbar = tqdm(range(itera), position=thread_num + 1, leave=False)
         for _ in pbar:
-            pop = deepcopy(self.pop)
+            pop = deepcopy(self.population)
             for _ in range(self.generations):
                 # EPSO
                 pop.reproduce()
@@ -96,7 +116,7 @@ class EPSO(Simulation):
 
     def _run_no_verbose(self, itera):
         for _ in range(itera):
-            pop = deepcopy(self.pop)
+            pop = deepcopy(self.population)
             for _ in range(self.generations):
                 # EPSO
                 pop.reproduce()
@@ -126,9 +146,9 @@ class EPSO(Simulation):
         else:
             self.best_cost = min(self.best_hist)
         if verbose:
-            print(self.final_message(start_time, end_time))
+            print(self._final_message(start_time, end_time))
 
-        self.pop = pop
+        self.population = pop
 
         if self.export_top > 0:
             self.export(self.export_top)
