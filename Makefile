@@ -86,6 +86,9 @@ build:  ## Builds the python packages(s)
 # ALL ---------------------------------------------------------------------------------------------
 all: clean dev-setup format static-analysis security test build future  ## Runs all development flow steps
 
+distribute:
+	$(RUN_COMMAND) twine upload dist/*
+
 wingo:
 	cd src && $(RUN_COMMAND) python -m example.wingo
 
