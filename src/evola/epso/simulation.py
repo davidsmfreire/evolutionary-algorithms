@@ -119,6 +119,8 @@ class EPSO(Simulation):
             pop = deepcopy(self.population)
             for _ in range(self.generations):
                 # EPSO
+                if itera == 1:
+                    self.cost_history.append(deepcopy(pop.global_best.cost))
                 pop.reproduce()
                 pop.move()
                 pop.select()
