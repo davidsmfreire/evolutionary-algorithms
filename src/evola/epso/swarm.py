@@ -1,6 +1,6 @@
 from copy import deepcopy
 from operator import attrgetter
-from typing import Callable, List
+from typing import Callable, List, Tuple, Union
 
 import numpy as np
 
@@ -13,8 +13,9 @@ class EvolutiveSwarm(Population):
         self,
         swarm_size: int,
         chromossome_length: int,
-        chromossome_low: float,
-        chromossome_high: float,
+        chromossome_low: Union[List[Union[float, int]], Union[float, int]],
+        chromossome_high: Union[List[Union[float, int]], Union[float, int]],
+        chromossome_dtypes: Union[List[type], type],
         cost_function: Callable,
         cost_function_args: tuple,
         wi: float,
@@ -26,21 +27,83 @@ class EvolutiveSwarm(Population):
         self.gen = 0  # generation counter (for wi)
         self._communication_p = communication_p  # communication probability
         self._chromossome_length = chromossome_length
+        if not isinstance(chromossome_low, list):
+            chromossome_low = [chromossome_low] * chromossome_length
+        if not isinstance(chromossome_high, list):
+            chromossome_high = [chromossome_high] * chromossome_length
+
         self._chromossome_low = chromossome_low
         self._chromossome_high = chromossome_high
         self._cost_function = cost_function
         self._cost_function_args = cost_function_args
 
+        if not isinstance(chromossome_dtypes, list):
+            chromossome_dtypes = [chromossome_dtypes] * chromossome_length
+
+        if len(chromossome_dtypes) != chromossome_length:
+            raise ValueError("Chromossome types list must be same length of chromossome")
+
+        if len(chromossome_low) != chromossome_length:
+            raise ValueError("Chromossome lower bounds must be same length of chromossome")
+
+        if len(chromossome_high) != chromossome_length:
+            raise ValueError("Chromossome higher bounds must be same length of chromossome")
+
+        rand_function: List[Callable] = []
+        for _type in chromossome_dtypes:
+            if isinstance(_type, int):
+                rand_function.append(np.random.randint)
+            else:  # by default, float chromossome value
+                rand_function.append(np.random.uniform)
+
+        self._rand_function = rand_function
+        self._chromossome_dtypes: List[type] = chromossome_dtypes
+
+        particles, ancestors = self._init_particles(
+            swarm_size,
+            chromossome_length,
+            rand_function,
+            chromossome_low,
+            chromossome_high,
+            cost_function,
+            cost_function_args,
+            wi,
+            wm,
+            wc,
+        )
+
+        self.ancestors: List[EvolutiveParticle] = ancestors
+        self.best_ancestors: List[EvolutiveParticle] = deepcopy(ancestors)
+        self.particles: List[EvolutiveParticle] = particles
+
+        sorted = min(self.ancestors, key=attrgetter("cost"))
+        self.global_best = deepcopy(sorted)  # best particle
+
+        return
+
+    @staticmethod
+    def _init_particles(
+        swarm_size,
+        chromossome_length,
+        rand_function,
+        chromossome_low,
+        chromossome_high,
+        cost_function,
+        cost_function_args,
+        wi,
+        wm,
+        wc,
+    ) -> Tuple[List[EvolutiveParticle], List[EvolutiveParticle]]:
+        # Generate particles and ancestors randomly
         ancestors: List[EvolutiveParticle] = []
         particles: List[EvolutiveParticle] = []
 
-        # Generate particles and ancestors randomly
         for _ in range(swarm_size):
             chromossome1 = np.zeros(chromossome_length)
             chromossome2 = np.zeros(chromossome_length)
             for i in range(chromossome_length):
-                chromossome1[i] = np.random.uniform(low=chromossome_low, high=chromossome_high)
-                chromossome2[i] = np.random.uniform(low=chromossome_low, high=chromossome_high)
+                chromossome1[i] = rand_function[i](low=chromossome_low[i], high=chromossome_high[i])
+                chromossome2[i] = rand_function[i](low=chromossome_low[i], high=chromossome_high[i])
 
             ancestors.append(
                 EvolutiveParticle(
@@ -63,14 +126,7 @@ class EvolutiveSwarm(Population):
                 )
             )
 
-        self.ancestors: List[EvolutiveParticle] = ancestors
-        self.best_ancestors: List[EvolutiveParticle] = deepcopy(ancestors)
-        self.particles: List[EvolutiveParticle] = particles
-
-        sorted = min(self.ancestors, key=attrgetter("cost"))
-        self.global_best = deepcopy(sorted)  # best particle
-
-        return
+        return particles, ancestors
 
     @property
     def elements(self):
@@ -113,8 +169,11 @@ class EvolutiveSwarm(Population):
         return
 
     def _constrain(self, chromossome: np.ndarray):
-        chromossome[chromossome > self._chromossome_high] = self._chromossome_high
-        chromossome[chromossome < self._chromossome_low] = self._chromossome_low
+        for i in range(len(chromossome)):
+            if chromossome[i] > self._chromossome_high[i]:
+                chromossome[i] = self._chromossome_high[i]
+            elif chromossome[i] < self._chromossome_low[i]:
+                chromossome[i] = self._chromossome_low[i]
         return chromossome
 
     def move(self):
@@ -152,7 +211,8 @@ class EvolutiveSwarm(Population):
                 deviation = deviation + communication_matrix[j] * np.random.normal() * self.particles[i].wc * (
                     self.global_best.chromossome[j] - self.particles[i].chromossome[j]
                 )
-                chromossome[j] = self.particles[i].chromossome[j] + deviation
+                chromossome[j] = self._chromossome_dtypes[j](self.particles[i].chromossome[j] + deviation)
+                # in this last line we typecast to correct chromossome dtype
 
             # Apply chromossome value ceiling and floor
             chromossome = self._constrain(chromossome)

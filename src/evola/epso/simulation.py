@@ -1,7 +1,7 @@
 import time
 from copy import deepcopy
 from multiprocessing import Queue
-from typing import Callable
+from typing import Callable, List, Union
 
 from tqdm.auto import tqdm
 
@@ -15,10 +15,11 @@ class EPSO(Simulation):
         generations,
         size: int,
         chromossome_length: int,
-        chromossome_low: float,
-        chromossome_high: float,
+        chromossome_low: Union[List[Union[float, int]], Union[float, int]],
+        chromossome_high: Union[List[Union[float, int]], Union[float, int]],
         cost_function: Callable,
         cost_function_args: tuple,
+        chromossome_dtypes: Union[List[type], type] = float,
         wi: float = 0.5,
         wm: float = 0.5,
         wc: float = 0.5,
@@ -33,6 +34,7 @@ class EPSO(Simulation):
             chromossome_length,
             chromossome_low,
             chromossome_high,
+            chromossome_dtypes,
             cost_function,
             cost_function_args,
             wi,
