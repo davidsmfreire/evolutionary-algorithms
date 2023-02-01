@@ -15,7 +15,7 @@ multi_line_output = 3
 
 [tool.poetry]
 name = "evola"
-version = "0.0.4"
+version = "0.0.5"
 description = "Evolutionary algorithms"
 authors = ["David Freire <up201806711@up.pt>"]
 license = "MIT"
