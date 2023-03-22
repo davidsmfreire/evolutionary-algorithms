@@ -15,7 +15,7 @@ multi_line_output = 3
 
 [tool.poetry]
 name = "evola"
-version = "0.0.6"
+version = "0.0.7"
 description = "Evolutionary algorithms"
 authors = ["David Freire <up201806711@up.pt>"]
 license = "MIT"
@@ -27,22 +27,22 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">3.8,<3.12"
+python = ">3.8"
 matplotlib = "^3.6.0"
 tqdm = "^4.64.1"
 
 [tool.poetry.dev-dependencies]
 bandit = "1.7.4"
 mypy = "0.961"
-isort = "==5.10.1"
-flake8 = "==4.0.1"
+isort = "^5.12.0"
+flake8 = "4.0.1"
 black = "22.3.0"
-pytest = "7.1.2"
-pytest-randomly = "==3.12.0"
+pytest = "^7.1.2"
+pytest-randomly = "^3.12.0"
 pre-commit = "2.19.0"
 coverage = "6.4.1"
-ipython = "8.4.0"
-safety = "1.10.3"
+ipython = "^8.4.0"
+safety = "^2.2.0"
 nox = "2022.1.7"
 flake8-bugbear = "22.4.25"
 twine = "^4.0.1"
