@@ -1,4 +1,4 @@
-# Evolutionary algorithms in Python
+# Evolutionary algorithms in (pure) Python
 
 There are three algorithms implemented in this package (from best to worse):
 

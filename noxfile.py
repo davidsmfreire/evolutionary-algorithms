@@ -2,7 +2,7 @@ import pathlib
 import nox
 
 
-@nox.session(python=["3.9", "3.10.2"])
+@nox.session(python=["3.9", "3.10.2", "3.11.4"])
 def test(session):
     session.run(
         "poetry",
@@ -11,7 +11,8 @@ def test(session):
         "requirements.txt",
         "--output",
         "requirements.txt",
-        "--dev",
+        "--with",
+        "dev",
         "--without-hashes",
         external=True,
     )

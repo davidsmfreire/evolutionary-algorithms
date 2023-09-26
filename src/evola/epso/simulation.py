@@ -1,9 +1,7 @@
 import time
 from copy import deepcopy
 from multiprocessing import Queue
-from typing import Callable, List, Union
-
-from tqdm.auto import tqdm
+from typing import Callable, List, Optional, Union
 
 from evola.epso.swarm import EvolutiveSwarm
 from evola.simulation import Simulation
@@ -57,11 +55,20 @@ class EPSO(Simulation):
         return self.population.global_best.chromossome
 
     def run_gui(self, hold=False):
-        self._init_graph()
+        try:
+            from matplotlib import pyplot as plt
+        except ImportError as exc:
+            raise RuntimeError(
+                "Install matplotlib if you wish to use GUI simulation: `pip install matplotlib`"
+            ) from exc
+
+        self._init_graph(plt)
         history = []
         start_time = time.time()
 
-        for _ in tqdm(range(self.generations)):
+        pbar, _ = self._get_pbar_if_tqdm_installed(range(self.generations))
+
+        for _ in pbar:
             # EPSO steps
             self.population.reproduce()
             self.population.move()
@@ -83,19 +90,22 @@ class EPSO(Simulation):
         print(self._final_message(start_time, end_time))
 
         if self.export_top > 0:
-            self.export(self.export_top, self.generations)
+            self.export(self.export_top)
 
-        self._finish_graph(hold)
+        self._finish_graph(hold, plt)
 
         return
 
     def _run_once(self, thread_num):
-        pbar = tqdm(range(self.generations), position=thread_num + 1, leave=False)
+        pbar, has_tqdm = self._get_pbar_if_tqdm_installed(range(self.generations), thread_num + 1)
         pop = deepcopy(self.population)
         for _ in pbar:
             # EPSO
             self.cost_history.append(deepcopy(pop.global_best.cost))
-            pbar.set_description(f"({self.population.size},{self.generations}) C = {pop.global_best.cost:.0f} euros")
+            if has_tqdm:
+                pbar.set_description(
+                    f"({self.population.size},{self.generations}) C = {pop.global_best.cost:.0f} euros"
+                )
             pop.reproduce()
             pop.move()
             pop.select()
@@ -103,7 +113,7 @@ class EPSO(Simulation):
         return pop
 
     def _run_multiple(self, itera, thread_num):
-        pbar = tqdm(range(itera), position=thread_num + 1, leave=False)
+        pbar, _ = self._get_pbar_if_tqdm_installed(range(itera), thread_num + 1)
         for _ in pbar:
             pop = deepcopy(self.population)
             for _ in range(self.generations):
@@ -131,7 +141,7 @@ class EPSO(Simulation):
             self.avg_hist.append(pop.average_cost())
         return pop
 
-    def run_cli(self, q: Queue = None, thread_num=0, verbose=True, itera=1):
+    def run_cli(self, q: Optional[Queue] = None, thread_num=0, verbose=True, itera=1):
 
         start_time = time.time()
 

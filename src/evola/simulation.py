@@ -1,8 +1,7 @@
 import csv
+import logging
 import sys
-from typing import List
-
-from matplotlib import pyplot as plt
+from typing import Any, List, Optional, Sequence
 
 from evola.population import Population
 
@@ -22,7 +21,7 @@ class Simulation:
         self.best_cost: float = 0.0
         return
 
-    def _init_graph(self):
+    def _init_graph(self, plt):
         # Real time plot setup
         plt.ion()
         fig, ax1 = plt.subplots()
@@ -60,7 +59,7 @@ class Simulation:
         self._fig.canvas.flush_events()
         return
 
-    def _finish_graph(self, hold):
+    def _finish_graph(self, hold, plt):
         self._fig.canvas.draw()
         plt.ioff()
         if hold:
@@ -81,6 +80,24 @@ class Simulation:
         )
         bestcost = "\t-> Least cost solution: %.6f\n" % self.best_cost
         return head + time + bestcost
+
+    def _get_pbar_if_tqdm_installed(self, iterator: Sequence[Any], position: Optional[int] = None):
+        _tqdm = None
+        try:
+            from tqdm.auto import tqdm
+
+            _tqdm = tqdm
+        except ImportError:
+            logging.warning(
+                "Install tqdm if you wish to see a pretty progressbar during simulation: `pip install tqdm`"
+            )
+
+        if _tqdm is not None:
+            pbar = _tqdm(iterator, position=position, leave=False)
+        else:
+            pbar = iterator
+
+        return pbar, _tqdm is not None
 
     def print(self, top):
         self.population.display(top)
