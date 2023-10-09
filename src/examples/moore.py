@@ -1,4 +1,5 @@
-from evola.epso import EPSO
+from evola.epso.academic_version import EPSO
+from evola.epso.performance_version import epso
 
 A = [
     -500.0,
@@ -57,13 +58,13 @@ A = [
 def main():
     # Minimize
     # sum(i, a(i)*power(x, ord(i)))
-    def cost(chromossome):
+    def cost(chromossome, *args, **kwargs):
         x = chromossome[0]
         return sum(a * x ** (i + 1) for i, a in enumerate(A))
 
     sim = EPSO(
         generations=100,
-        size=10,
+        size=1000,
         chromossome_length=1,
         chromossome_low=1,
         chromossome_high=2,
@@ -76,6 +77,12 @@ def main():
 
     print("Solution:")
     print(sim.best_solution[0])
+
+    result = epso(
+        swarm_size=1000, generations=100, chromosome_length=1, chromosome_high=2, chromosome_low=1, cost_function=cost
+    )
+    print("Perf Solution:")
+    print(result)
 
 
 if __name__ == "__main__":

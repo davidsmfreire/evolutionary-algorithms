@@ -3,7 +3,7 @@ from copy import deepcopy
 from multiprocessing import Queue
 from typing import Callable, List, Optional, Union
 
-from evola.epso.swarm import EvolutiveSwarm
+from evola.epso.academic_version.swarm import EvolutiveSwarm
 from evola.simulation import Simulation
 
 

@@ -1,4 +1,6 @@
 """
     Evolutionary Particle Swarm Optimization
 """
-from evola.epso.simulation import EPSO  # noqa
+__all__ = ["EPSO", "epso"]
+from .academic_version.simulation import EPSO  # noqa
+from .performance_version import epso

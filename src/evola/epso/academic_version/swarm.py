@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple, Union
 
 import numpy as np
 
-from evola.epso.particle import EvolutiveParticle
+from evola.epso.academic_version.particle import EvolutiveParticle
 from evola.population import Population
 
 
