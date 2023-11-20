@@ -137,9 +137,9 @@ def epso(
             )
 
             # wc: global best weight
-            deviation = deviation + communication_matrix[:, swarm_size * i : swarm_size * (i + 1)] * np.random.normal(
-                size=deviation.shape
-            ) * chromosome_matrix[wc_slice_rows, _slice] * (
+            deviation = deviation + communication_matrix[
+                :, swarm_size * i : swarm_size * (i + 1)  # noqa
+            ] * np.random.normal(size=deviation.shape) * chromosome_matrix[wc_slice_rows, _slice] * (
                 chromosome_matrix[chromosome_slice_rows, global_best_chromosome_index][:, np.newaxis]
                 - chromosome_matrix[chromosome_slice_rows, _slice]
             )
@@ -198,19 +198,3 @@ def epso(
     global_best_chromosome_index = np.argmin(chromosome_matrix[cost_slice_row, current_particles_slice_cols])
 
     return chromosome_matrix[chromosome_slice_rows, global_best_chromosome_index]  # solution
-
-
-if __name__ == "__main__":
-
-    def fn(array, arg1):
-        return 1
-
-    epso(
-        swarm_size=100,
-        generations=1000,
-        chromosome_length=5,
-        chromosome_low=0,
-        chromosome_high=1,
-        cost_function=fn,
-        cost_function_args=(1,),
-    )
