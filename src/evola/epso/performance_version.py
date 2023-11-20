@@ -1,10 +1,9 @@
 from typing import Callable, Optional, Union
 
 import numpy as np
-from tqdm import tqdm
 
 
-def epso(
+def epso(  # noqa
     swarm_size: int,
     generations: int,
     chromosome_length: int,
@@ -94,7 +93,16 @@ def epso(
     chromosome_matrix[:, best_ancestors_slice_cols] = chromosome_matrix[:, ancestors_slice_cols]
     global_best_chromosome_index = np.argmin(chromosome_matrix[cost_slice_row, current_particles_slice_cols])
 
-    iterator = tqdm(range(generations)) if verbose else range(generations)
+    iterator = range(generations)
+
+    if verbose:
+        try:
+            from tqdm import tqdm
+
+            iterator = tqdm(iterator)
+        except ImportError:
+            raise Exception("Must install tqdm to use verbose: pip install `tqdm`")
+
     for generation in iterator:
         # Reproduce
         chromosome_matrix[:, particles_sons_slice_cols] = chromosome_matrix[:, particles_slice_cols]
